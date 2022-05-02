@@ -1,0 +1,341 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation skip
+\defskip smallskip
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+Definition 1: A string 
+\begin_inset Formula $N$
+\end_inset
+
+(the needle) 
+\emph on
+has an instance
+\emph default
+ at index 
+\begin_inset Formula $i$
+\end_inset
+
+ in string 
+\begin_inset Formula $H$
+\end_inset
+
+ (the haystack) iff 
+\begin_inset Formula $\forall k\in[0,|N|),N[k]=H[i+k]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Definition 2: A string 
+\begin_inset Formula $N$
+\end_inset
+
+ 
+\emph on
+consists of repetitions
+\emph default
+ of a prefix string 
+\begin_inset Formula $P$
+\end_inset
+
+, possibly including a final partial repetition (i.e.
+ a nonempty proper prefix of 
+\begin_inset Formula $P$
+\end_inset
+
+), iff 
+\begin_inset Formula $\forall k\in[0,|N|),N[k]=P[k\mod|P|]$
+\end_inset
+
+.
+ In that case, the number of repetitions (again including any partial one)
+ is 
+\begin_inset Formula $\lceil|N|/|P|\rceil$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Definition 3: Two instances of a string 
+\begin_inset Formula $N$
+\end_inset
+
+ at indices 
+\begin_inset Formula $i,j$
+\end_inset
+
+ in some string 
+\emph on
+overlap
+\emph default
+ iff the intervals 
+\begin_inset Formula $[i,i+|N|)$
+\end_inset
+
+ and 
+\begin_inset Formula $[j,j+|N|)$
+\end_inset
+
+ overlap (i.e.
+ have a nonempty intersection).
+\end_layout
+
+\begin_layout Standard
+Theorem 1: To have overlapping instances in 
+\emph on
+any
+\emph default
+ target string 
+\begin_inset Formula $H$
+\end_inset
+
+ (the haystack), a sought string 
+\begin_inset Formula $N$
+\end_inset
+
+ (the needle) must consist of at least two repetitions of some prefix 
+\begin_inset Formula $P$
+\end_inset
+
+, the last of which may be partial.
+ Furthermore, all overlapping instances are offset from each other by multiples
+ of the length of this prefix (i.e.
+ if there are overlapping instances at indices 
+\begin_inset Formula $i$
+\end_inset
+
+ and 
+\begin_inset Formula $j$
+\end_inset
+
+, then 
+\begin_inset Formula $(i-j)/|P|\in\mathbb{Z}$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Proof: An overlapping instance occurs iff an instance occurs at some index
+ 
+\begin_inset Formula $i$
+\end_inset
+
+ and another instance occurs at 
+\begin_inset Formula $i+p$
+\end_inset
+
+ for some 
+\begin_inset Formula $p\in[1,|N|)$
+\end_inset
+
+.
+ This means that 
+\begin_inset Formula $\forall k\in[0,|N|-p),N[k]=N[p+k]$
+\end_inset
+
+ (since the instance at 
+\begin_inset Formula $i+p$
+\end_inset
+
+ means that 
+\begin_inset Formula $H[(i+p)+k]=N[k]$
+\end_inset
+
+ and the instance at 
+\begin_inset Formula $i$
+\end_inset
+
+ means that 
+\begin_inset Formula $H[i+(p+k)]=N[p+k]$
+\end_inset
+
+), which is equivalent to saying that 
+\begin_inset Formula $N$
+\end_inset
+
+ consists of 
+\begin_inset Formula $\lceil|N|/p\rceil$
+\end_inset
+
+ repetitions (the last one of which may be partial) of a prefix of length
+ 
+\begin_inset Formula $p$
+\end_inset
+
+ (to see this, consider that if 
+\begin_inset Formula $p+k<|N|-p$
+\end_inset
+
+, then 
+\begin_inset Formula $N[k]=N[p+k]=N[p+(p+k)]$
+\end_inset
+
+, etc.).
+\end_layout
+
+\begin_layout Standard
+Theorem 2: No string consists of repetitions (partial or not) of two distinct
+ prefixes 
+\begin_inset Formula $P,Q$
+\end_inset
+
+ such that neither prefix is a multiple (i.e.
+ consists of a number of complete repetitions) of the other.
+\end_layout
+
+\begin_layout Standard
+Proof: TODO
+\end_layout
+
+\begin_layout Standard
+Corollary 2.1: If a string 
+\begin_inset Formula $S$
+\end_inset
+
+ consists of repetitions of any prefix, then it has a unique 
+\emph on
+shortest repeating prefix
+\emph default
+ 
+\begin_inset Formula $P$
+\end_inset
+
+ such that all repeating prefixes of 
+\begin_inset Formula $S$
+\end_inset
+
+ are multiples of 
+\begin_inset Formula $P$
+\end_inset
+
+.
+ This is just Theorem 2 stated as a universal positive instead of an existential
+ negative (plus the facts that no string has more than one prefix of the
+ same length, that no shorter string is a (non-zero) multiple of a longer
+ one and that 
+\begin_inset Quotes eld
+\end_inset
+
+being a multiple of
+\begin_inset Quotes erd
+\end_inset
+
+ is transitive).
+\end_layout
+
+\begin_layout Standard
+Note that together, Theorem 1 and Corollary 2.1 imply that there's no need
+ to backtrack in the haystack to find overlapping instances of the needle
+ string 
+\begin_inset Formula $N$
+\end_inset
+
+.
+ When we are searching for an overlappable string (i.e.
+ one that consists of a shortest repeating prefix 
+\begin_inset Formula $P$
+\end_inset
+
+) and find an instance that doesn't overlap with any preceding instance
+ (i.e.
+ one that begins at a smaller index in the haystack), we know that we potentiall
+y have the beginning of an overlapping instance (i.e.
+ the found instance minus the first repetition of 
+\begin_inset Formula $P$
+\end_inset
+
+).
+ We may continue to check this potential search hit against the suffix of
+ 
+\begin_inset Formula $N$
+\end_inset
+
+ starting at index 
+\begin_inset Formula $|N|-|P|$
+\end_inset
+
+.
+ If we do find an overlapping instance, we may continue searching for additional
+ overlapping instances in the same way.
+\end_layout
+
+\end_body
+\end_document

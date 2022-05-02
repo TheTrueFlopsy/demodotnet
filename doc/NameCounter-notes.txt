@@ -1,0 +1,42 @@
+
+Hypothesis: To have overlapping instances in any target string H (haystack), a sought string N (needle) must consist of at least two repetitions of a prefix, the last of which may be partial. An overlapping instance occurs iff an instance occurs at H[i] and another instance occurs at H[i+d], for some d in [1, len(N)). This means that for all j in [0, len(N)-d), N[j] = N[d+j], which is equivalent to the hypothesis.
+
+TODO: Write a proper proof of the above.
+
+This means that there's no need to backtrack to find overlapping instances. Whenever an instance that was not preceded by overlapping instances has been found, we know that we have the beginning of an overlapping instance (i.e. the found instance minus the first repetition of the prefix). We may continue to check this partial hit in H against the suffix of N starting at len(N)-len(prefix).
+
+TODO: Write a proper proof of the above.
+
+The maximum number of instances overlapping with an instance of a string that consists of n repetitions of a prefix is 2*(n-1). This is true regardless of whether the last repetition is partial. Imagine lining up two instances vertically and then sliding one of them left or right by increments equal to the length of the (complete) repeated prefix.
+
+TODO: Write a proper proof of the above.
+
+TODO: Prove that all overlapping instances must start at a multiple of a single shortest repeated prefix length, i.e. it is not possible to separate a string into repetitions of two or more different prefixes, where neither is a multiple of the other or any shorter repeated prefix.
+
+aaa
+aaaaaaa
+aaa
+ aaa
+	aaa
+	 aaa
+		aaa
+
+ababa
+ababababababa
+ababa
+	ababa
+		ababa
+			ababa
+				ababa
+
+ababCabaD
+ababCabab
+
+abCabDabC
+abCabC
+
+
+aaabaaabcc
+
+aaaa
+aaabaaaba
