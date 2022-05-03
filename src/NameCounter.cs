@@ -1,11 +1,12 @@
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace NameCounter {
 	
-	struct PrefixString {
+	/*struct PrefixString {
 		public string Data;
 		
 		public int PrefixLength;
@@ -33,13 +34,13 @@ namespace NameCounter {
 			}
 		}
 		
-		PrefixInfo(string s, int pLen, int rLen) {
+		PrefixString(string s, int pLen, int rLen) {
 			Data = s;
 			PrefixLength = pLen;
 			RepeatLength = rLen;
 		}
 		
-		PrefixInfo(string s) {
+		PrefixString(string s) {
 			Data = s;
 			PrefixLength = s.Length;
 			RepeatLength = s.Length;
@@ -53,79 +54,136 @@ namespace NameCounter {
 			//        e.g. "aaabaaabaacc". WAT DO? Stop trying to analyze them all and
 			//        resort to a dumb solution (e.g. restart from position 1)?
 		}
-	}
+	}*/
 	
 	static class StreamSearcher {
-		static 
-		
-		// ISSUE: How to deal with overlapping instances of the sought string
-		//        (i.e. does "aaaa" contain one or two instances of "aaa"?)?
-		//        I think I'll start by implementing non-overlapping search
-		//        (because that's easier and sometimes what is intuitively
-		//        expected) and then consider overlapping search as an option.
-		// TODO: Implement this.
-		static int CountString(StreamReader f, string s) {
-			int ci = -1, k = 0, count = 0;
+		private struct PrefixData {
+			public int Index;
 			
-			while ((ci = f.Read()) >= 0) {
-				char c = Convert.ToChar(ci);
-				
-				if (c == s[k]) {
-					k++;
+			public int Length;
+			
+			public PrefixData(int index, int len) {
+				Index = index;
+				Length = len;
+			}
+		}
+		
+		private static PrefixData[] FindPrefixes(string s) {
+			var prefixes = new List<PrefixData>();
+			
+			for (int index = 1; index < s.Length; index++) {
+				if (s[index] == s[0]) {  // Found a repeated prefix.
+					int length = 1;
 					
-					if (k >= s.Length) {
+					while (index + length < s.Length && s[index + length] == s[length])
+						length++;
+					
+					prefixes.Add(new PrefixData(index, length));
+				}
+			}
+			
+			return prefixes.ToArray();
+		}
+		
+		private static char ReadChar(StreamReader f, out bool success) {
+			int ci = f.Read();  // Read the next character from the stream.
+			
+			if (ci < 0) {  // Failed to read from the stream.
+				success = false;
+				return '\0';
+			}
+			else {
+				success = true;
+				return Convert.ToChar(ci);
+			}
+		}
+		
+		private static int GetPrefixPos(PrefixData[] prefixes, int pos) {
+			// If no matching prefix is found, abort the current matching attempt and
+			// look for the next partial match (starting with the current char).
+			int prefixPos = 0;
+			
+			// Check each repeating prefix in the query string.
+			foreach (var prefix in prefixes) {
+				// Break when the remaining prefixes start after the current partial match.
+				if (prefix.Index >= pos)
+					break;
+				else if (prefix.Length >= pos - prefix.Index) {  // Found matching prefix.
+					// Set query string position to continue the matching attempt from
+					// the position of the matching prefix.
+					prefixPos = pos - prefix.Index;
+					break;
+				}
+			}
+			
+			return prefixPos;
+		}
+		
+		public static int CountString(StreamReader f, string s) {
+			PrefixData[] prefixes = FindPrefixes(s);
+			
+			bool hasChar;
+			char c = ReadChar(f, out hasChar);  // Read the first character from the stream.
+			int pos = 0, count = 0;
+			
+			while (hasChar) {
+				if (c == s[pos]) {  // Current char matches, continue matching.
+					pos++;
+					
+					if (pos >= s.Length) {  // Successful match!
+						pos = 0;  // Look for the next match.
+						
 						if (count == int.MaxValue) {
 							// TODO: Report overflow.
 						}
-						else {
-							count++;
-							k = 0;
-						}
+						else
+							count++;  // Increment match count.
 					}
 				}
-				else {
-					// FIXME: We have to consider repeating prefixes even when doing
-					//        a non-overlapping search. If N is "ababaC", then we must
-					//        restart the match at position 2 in N after finding "ababab" in H.
-					// IDEA: Is it always sufficient to continue the match with the unmatching
-					//       character, now at position k-|P| in N, unless k-|P| is not in the
-					//       repeating-prefix part of N (then start at position 0)?
+				else if (pos > 0) {  // Failed partial match, check for repeating prefix match.
+					// NOTE: We have to consider repeating prefixes even when doing
+					//       a non-overlapping search. If the query string is "ababaC",
+					//       then we must restart the match at position 4 in the string
+					//       after finding "ababab" in the input stream.
+					pos = GetPrefixPos(prefixes, pos);
+					continue;  // Test current char again at the new query string position.
 				}
+				// else: No match in progress, keep looking for a match.
+				
+				c = ReadChar(f, out hasChar);  // Read the next character from the stream.
 			}
+			
+			return count;
 		}
 		
-		static int CountString(Stream f, string s) {
-			int res;
+		public static int CountString(Stream f, string s) {
+			int count;
 			
 			using (StreamReader sr = new StreamReader(f)) {
-				res = CountString(sr, s);
+				count = CountString(sr, s);
 			}
 			
-			return res;
+			return count;
 		}
 		
-		// TODO: Implement this.
-		static int CountStringOverlapping(StreamReader f, string s) {
-			// Check whether the string 's' consists of a repeating prefix.
-			// If it doesn't, then there are no overlapping instances and
-			// a non-overlapping search is sufficient.
+		public static int CountStringOverlapping(StreamReader f, string s) {
+			return -1;  // TODO: Implement this.
 		}
 		
-		static int CountStringOverlapping(Stream f, string s) {
-			int res;
+		public static int CountStringOverlapping(Stream f, string s) {
+			int count;
 			
 			using (StreamReader sr = new StreamReader(f)) {
-				res = CountStringOverlapping(sr, s);
+				count = CountStringOverlapping(sr, s);
 			}
 			
-			return res;
+			return count;
 		}
 	}
 	
 	static class NameCounterMain {
-		
 		static void Main(string[] args) {
-			// TODO: Parse arguments.
+			// TODO: Parse option arguments.
 			// Options:
 			//   -o, --overlapping    - Include overlapping instances (def: no).
 			//   -p, --include-path   - Include path in default query string (def: no).
@@ -134,12 +192,32 @@ namespace NameCounter {
 			//   -z, --accept-missing - Treat nonexistent input files as empty instead
 			//                          of having them trigger an error (def: no).
 			
-			// TODO: Open input file. (If no filename specified, read standard input.)
-			// IDEA: Handle multiple input files. Output the count for each file.
+			// TODO: Handle multiple input files. Output the count for each file.
 			
-			// TODO: Count instances of the filename in the file contents.
+			if (args.Length < 1) {
+				Console.WriteLine("No input file specified.");
+				Environment.Exit(1);
+			}
 			
-			// TODO: Print the count on standard output.
+			string filePath = args[0];
+			string queryString;
+			
+			if (args.Length >= 2)
+				queryString = args[1];
+			else
+				queryString = Path.GetFileNameWithoutExtension(filePath);
+			
+			int count = -1;
+			
+			// Open input file.
+			// TODO: If no filename specified, read standard input.
+			using (FileStream f = File.Open(filePath, FileMode.Open, FileAccess.Read)) {
+				// Count instances of the filename in the file contents.
+				count = StreamSearcher.CountString(f, queryString);
+			}
+			
+			// Print the count on standard output.
+			Console.WriteLine($"Found {count:d} instances of the query string.");
 		}
 	}
 }

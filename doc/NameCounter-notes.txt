@@ -40,3 +40,39 @@ aaabaaabcc
 
 aaaa
 aaabaaaba
+
+a
+aab
+aabaabc
+aabaabcaabaabcd
+aabaabcaabaabcdaabaabcaabaabcde
+aabaabcaabaabcdaabaabcaabaabcdeaabaabcaabaabcdaabaabcaabaabcdef
+
+a
+aab
+aabac
+aabacad
+aabacadae
+aabacadaeaf
+
+ISSUE: Since the repeated prefix is an arbitrary string, this kind of structure (rep. prefix has a rep. prefix which has a ...) can be arbitrarily deep. What does that mean for any attempt to "intelligently" handle restart after failed partial match? Deal with the highest level of prefixing that you've proceeded into? How do you keep track of all the prefix levels? Is all this even worth it for what is a corner case in the first place?
+
+IDEA: Turn the problem inside out. Build the search algorithm around the repeated prefix structure and make strings with repeat count 1 the "corner case".
+	'aaabaaabaacc'
+	[('aaab', 10), 'cc']
+	[([('a', 3), 'b'], 10), 'cc']
+	
+	'abaBaaC'
+	[('abaBa', 6), 'C']
+	[(('abaB', 5), 6), 'C']
+	[(([('ab', 3), 'B'], 5), 6), 'C']
+	
+	abaBabaabC
+ISSUE: Can all this match restart bothersomeness be neatly integrated with overlapping instance search? Repeating prefixes are central there, too.
+
+IDEA: Is it always sufficient to continue the match with the unmatching character, now at position pos-|P| in N, unless pos-|P| is not in the repeating-prefix part of N (then start at position 0)?
+
+
+NOTE: I need to distinguish two different concepts that are both in some sense about a "repeating prefix". The first is simply some prefix of the string reappearing later in the string (i.e. N > 0 chars starting at I > 0 are equal to the first N chars of the string). The second is a special case of the first, some prefix of the string being consecutively repeated at least twice at the start of the string (i.e. the first N > 0 chars of the string are equal to the N chars starting at I = k*N for all k in [1, K] for some K > 0). An extension of the second case allows the last repetition to be partial (i.e. end after less than N (but at least one) repeated chars).
+	! The first sense is relevant to restarting after a failed partial match.
+	! The extended second sense (specifically, strings that consist entirely of such a repeated prefix) is relevant to finding overlapping matches.
