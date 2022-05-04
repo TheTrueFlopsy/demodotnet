@@ -5,57 +5,6 @@ using System.IO;
 using System.Text;
 
 namespace NameCounter {
-	
-	/*struct PrefixString {
-		public string Data;
-		
-		public int PrefixLength;
-		
-		public int RepeatLength;
-		
-		public int FullRepeatCount {
-			get { return RepeatLength / PrefixLength; }
-		}
-		
-		public int FullRepeatLength {
-			get { return FullRepeatCount * PrefixLength; }
-		}
-		
-		public bool HasPartialRepeat {
-			get { return FullRepeatLength < RepeatLength; }
-		}
-		
-		public int RepeatCount {
-			get {
-				if (HasPartialRepeat)
-					return FullRepeatCount + 1;
-				else
-					return FullRepeatCount;
-			}
-		}
-		
-		PrefixString(string s, int pLen, int rLen) {
-			Data = s;
-			PrefixLength = pLen;
-			RepeatLength = rLen;
-		}
-		
-		PrefixString(string s) {
-			Data = s;
-			PrefixLength = s.Length;
-			RepeatLength = s.Length;
-			
-			
-		}
-		
-		private void UpdatePrefixFields() {
-			// ISSUE: I just realized that a string can start with (but not consist of)
-			//        several repeated prefixes (that are not multiples of each other),
-			//        e.g. "aaabaaabaacc". WAT DO? Stop trying to analyze them all and
-			//        resort to a dumb solution (e.g. restart from position 1)?
-		}
-	}*/
-	
 	static class StreamSearcher {
 		private struct PrefixData {
 			public int Index;
@@ -85,25 +34,12 @@ namespace NameCounter {
 			return prefixes.ToArray();
 		}
 		
-		private static char ReadChar(StreamReader f, out bool success) {
-			int ci = f.Read();  // Read the next character from the stream.
-			
-			if (ci < 0) {  // Failed to read from the stream.
-				success = false;
-				return '\0';
-			}
-			else {
-				success = true;
-				return Convert.ToChar(ci);
-			}
-		}
-		
 		private static int GetPrefixPos(PrefixData[] prefixes, int pos) {
 			// If no matching prefix is found, abort the current matching attempt and
 			// look for the next partial match (starting with the current char).
 			int prefixPos = 0;
 			
-			// Check each repeating prefix in the query string.
+			// Check each repeated prefix in the query string.
 			foreach (var prefix in prefixes) {
 				// Break when the remaining prefixes start after the current partial match.
 				if (prefix.Index >= pos)
@@ -119,7 +55,25 @@ namespace NameCounter {
 			return prefixPos;
 		}
 		
-		public static int CountString(StreamReader f, string s) {
+		private static char ReadChar(StreamReader f, out bool success) {
+			int ci = f.Read();  // Read the next character from the stream.
+			
+			if (ci < 0) {  // Failed to read from the stream.
+				success = false;
+				return '\0';
+			}
+			else {
+				success = true;
+				return Convert.ToChar(ci);
+			}
+		}
+		
+		public static int CountString(StreamReader f, string s, bool overlapMode) {
+			if (s.Length == 0) {
+				Console.WriteLine("Cannot search for the empty string.");
+				return -1;
+			}
+			
 			PrefixData[] prefixes = FindPrefixes(s);
 			
 			bool hasChar;
@@ -128,20 +82,22 @@ namespace NameCounter {
 			
 			while (hasChar) {
 				if (c == s[pos]) {  // Current char matches, continue matching.
-					pos++;
+					pos++;  // Increment length of partial match.
 					
 					if (pos >= s.Length) {  // Successful match!
-						pos = 0;  // Look for the next match.
+						// Look for the next match.
+						pos = (overlapMode) ? GetPrefixPos(prefixes, pos) : 0;
 						
 						if (count == int.MaxValue) {
-							// TODO: Report overflow.
+							Console.WriteLine("Maximum count exceeded.");
+							return -1;
 						}
 						else
 							count++;  // Increment match count.
 					}
 				}
-				else if (pos > 0) {  // Failed partial match, check for repeating prefix match.
-					// NOTE: We have to consider repeating prefixes even when doing
+				else if (pos > 0) {  // Failed partial match, check for repeated prefix match.
+					// NOTE: We have to consider repeated prefixes even when doing
 					//       a non-overlapping search. If the query string is "ababaC",
 					//       then we must restart the match at position 4 in the string
 					//       after finding "ababab" in the input stream.
@@ -156,25 +112,11 @@ namespace NameCounter {
 			return count;
 		}
 		
-		public static int CountString(Stream f, string s) {
+		public static int CountString(Stream f, string s, bool overlapMode) {
 			int count;
 			
 			using (StreamReader sr = new StreamReader(f)) {
-				count = CountString(sr, s);
-			}
-			
-			return count;
-		}
-		
-		public static int CountStringOverlapping(StreamReader f, string s) {
-			return -1;  // TODO: Implement this.
-		}
-		
-		public static int CountStringOverlapping(Stream f, string s) {
-			int count;
-			
-			using (StreamReader sr = new StreamReader(f)) {
-				count = CountStringOverlapping(sr, s);
+				count = CountString(sr, s, overlapMode);
 			}
 			
 			return count;
@@ -182,38 +124,183 @@ namespace NameCounter {
 	}
 	
 	static class NameCounterMain {
-		static void Main(string[] args) {
-			// TODO: Parse option arguments.
-			// Options:
-			//   -o, --overlapping    - Include overlapping instances (def: no).
-			//   -p, --include-path   - Include path in default query string (def: no).
-			//   -q, --query STR      - Query string (def: filename sans extension).
-			//   -x, --include-ext    - Include extension in default query string (def: no).
-			//   -z, --accept-missing - Treat nonexistent input files as empty instead
-			//                          of having them trigger an error (def: no).
+		private static bool printUsage = false;
+		private static bool overlapMode = false;
+		private static string queryString = null;
+		private static bool acceptMissing = false;
+		
+		private static string GetOptionArgument(string[] args, ref int argIndex, ref int strIndex) {
+			// Use the rest of the current CLI argument as the option argument.
+			string arg = args[argIndex].Substring(strIndex);
 			
-			// TODO: Handle multiple input files. Output the count for each file.
+			// Continue looking for options in the next CLI argument.
+			argIndex++;
+			strIndex = 1;
 			
-			if (args.Length < 1) {
-				Console.WriteLine("No input file specified.");
-				Environment.Exit(1);
+			if (arg.Length == 0) {  // At end of current CLI argument. Try the next one.
+				if (argIndex >= args.Length)  // No more CLI arguments.
+					return null;  // No option argument. Not the same thing as an empty argument.
+				
+				arg = args[argIndex];
+				
+				if (arg.StartsWith('-')) // Next CLI argument is an option.
+					return null;  // No option argument.
+				
+				argIndex++;
 			}
 			
-			string filePath = args[0];
-			string queryString;
+			return arg;
+		}
+		
+		private static int ParseArgs(string[] args) {
+			int argIndex = 0, strIndex = 1;
+			bool endOfOptions = false;
 			
-			if (args.Length >= 2)
-				queryString = args[1];
-			else
-				queryString = Path.GetFileNameWithoutExtension(filePath);
+			while (argIndex < args.Length && args[argIndex].StartsWith('-')) {
+				if (strIndex >= args[argIndex].Length) {
+					if (args[argIndex].Length == 1) {  // The argument is just a minus sign.
+						Console.WriteLine("Missing option symbol.");
+						return -1;
+					}
+					
+					// No more options in this CLI argument.
+					argIndex++;
+					strIndex = 1;
+					
+					if (endOfOptions)
+						break;  // Treat any remaining arguments as input files.
+					else
+						continue;  // Continue with the next argument.
+				}
+				
+				char optionSymbol = args[argIndex][strIndex++];
+				
+				switch (optionSymbol) {
+				case '-':
+					endOfOptions = true;
+					break;
+				case 'h':
+					printUsage = true;
+					break;
+				case 'o':
+					overlapMode = true;
+					break;
+				case 'q':
+					queryString = GetOptionArgument(args, ref argIndex, ref strIndex);
+					break;
+				case 'z':
+					acceptMissing = true;
+					break;
+				default:
+					Console.WriteLine($"Unrecognized option {optionSymbol}.");
+					return -1;
+				}
+			}
 			
-			int count = -1;
+			return argIndex;
+		}
+		
+		private static void PrintUsage() {
+			Console.WriteLine(@"Usage: NameCounter [OPTION]... FILE...
+Count instances of a string in the specified text files. The default
+behavior is to search for the name of each input file (sans extension).
+
+Options (may be combined in a single argument (e.g. '-ozq hello')):
+  --        End option parsing, treat remaining arguments as input files.
+  -h        Print this message and exit.
+  -o        Include overlapping instances (default: no).
+  -q STR    Query string (default: input filename without extension).
+  -z        Treat nonexistent input files as empty instead of having them
+            trigger an error (default: no).");
+		}
+		
+		static void Main(string[] args) {
+			// Parse CLI arguments.
+			int inputArgIndex = ParseArgs(args);
 			
-			// Open input file.
-			// TODO: If no filename specified, read standard input.
-			using (FileStream f = File.Open(filePath, FileMode.Open, FileAccess.Read)) {
+			if (inputArgIndex < 0) {  // Argument parsing failed.
+				PrintUsage();
+				Environment.Exit(2);
+			}
+			
+			if (printUsage) {
+				PrintUsage();
+				return;
+			}
+			
+			if (queryString != null && queryString.Length == 0) {
+				Console.WriteLine("Cannot search for the empty string.");
+				Environment.Exit(2);
+			}
+			
+			if (inputArgIndex >= args.Length) {
+				Console.WriteLine("No input file specified.");
+				PrintUsage();
+				Environment.Exit(2);
+			}
+			
+			int count = 0;
+			
+			// Process the input file(s).
+			while (inputArgIndex < args.Length) {
+				string inputPath = args[inputArgIndex];
+				string inputQuery;
+				
+				if (queryString == null)
+					inputQuery = Path.GetFileNameWithoutExtension(inputPath);
+				else
+					inputQuery = queryString;
+				
+				// Open input file.
+				bool notFound = false;
+				FileStream f = null;
+				
+				try {
+					f = File.Open(inputPath, FileMode.Open, FileAccess.Read);
+				}
+				catch (FileNotFoundException) {
+					Console.WriteLine($"File not found: {inputPath}");
+					notFound = true;
+				}
+				catch (DirectoryNotFoundException) {
+					Console.WriteLine($"Directory not found: {inputPath}");
+					notFound = true;
+				}
+				catch (ArgumentException) {
+					Console.WriteLine($"Invalid path: {inputPath}");
+				}
+				catch (NotSupportedException) {
+					Console.WriteLine($"Invalid path: {inputPath}");
+				}
+				catch (PathTooLongException) {
+					Console.WriteLine($"Path is too long: {inputPath}");
+				}
+				catch (UnauthorizedAccessException) {
+					Console.WriteLine($"File not accessible: {inputPath}");
+				}
+				
 				// Count instances of the filename in the file contents.
-				count = StreamSearcher.CountString(f, queryString);
+				int inputCount = -1;
+				
+				if (f != null) {
+					using (f) {
+						inputCount = StreamSearcher.CountString(f, inputQuery, overlapMode);
+					}
+				}
+				
+				if (notFound && acceptMissing)
+					inputCount = 0;
+				
+				if (inputCount < 0)  // Something went wrong.
+					Environment.Exit(1);
+				else if (inputCount > int.MaxValue - count) {
+					Console.WriteLine("Maximum total count exceeded.");
+					Environment.Exit(1);
+				}
+				else
+					count += inputCount;
+				
+				inputArgIndex++;
 			}
 			
 			// Print the count on standard output.

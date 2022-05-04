@@ -102,38 +102,7 @@ has an instance
 \end_layout
 
 \begin_layout Standard
-Definition 2: A string 
-\begin_inset Formula $N$
-\end_inset
-
- 
-\emph on
-consists of repetitions
-\emph default
- of a prefix string 
-\begin_inset Formula $P$
-\end_inset
-
-, possibly including a final partial repetition (i.e.
- a nonempty proper prefix of 
-\begin_inset Formula $P$
-\end_inset
-
-), iff 
-\begin_inset Formula $\forall k\in[0,|N|),N[k]=P[k\mod|P|]$
-\end_inset
-
-.
- In that case, the number of repetitions (again including any partial one)
- is 
-\begin_inset Formula $\lceil|N|/|P|\rceil$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-Definition 3: Two instances of a string 
+Definition 2: Two instances of a string 
 \begin_inset Formula $N$
 \end_inset
 
@@ -158,25 +127,77 @@ overlap
 \end_layout
 
 \begin_layout Standard
+Definition 3: A string 
+\begin_inset Formula $S$
+\end_inset
+
+ is 
+\emph on
+periodic
+\emph default
+ with 
+\emph on
+periodic prefix
+\emph default
+ 
+\begin_inset Formula $P$
+\end_inset
+
+, iff 
+\begin_inset Formula $\forall k\in[0,|S|),S[k]=P[k\mod|P|]$
+\end_inset
+
+.
+ In that case, the number of periods (i.e.
+ repetitions of 
+\begin_inset Formula $P$
+\end_inset
+
+ in 
+\begin_inset Formula $S$
+\end_inset
+
+, including any final partial one) is 
+\begin_inset Formula $\lceil|S|/|P|\rceil$
+\end_inset
+
+.
+ The length of the periodic prefix (i.e.
+ 
+\begin_inset Formula $|P|$
+\end_inset
+
+) is a 
+\emph on
+period
+\emph default
+ of 
+\begin_inset Formula $S$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
 Theorem 1: To have overlapping instances in 
 \emph on
 any
 \emph default
- target string 
+ string 
 \begin_inset Formula $H$
 \end_inset
 
- (the haystack), a sought string 
+, a string 
 \begin_inset Formula $N$
 \end_inset
 
- (the needle) must consist of at least two repetitions of some prefix 
-\begin_inset Formula $P$
+ must be periodic.
+ Furthermore, all overlapping instances will be offset from each other by
+ multiples of a period of 
+\begin_inset Formula $N$
 \end_inset
 
-, the last of which may be partial.
- Furthermore, all overlapping instances are offset from each other by multiples
- of the length of this prefix (i.e.
+ (i.e.
  if there are overlapping instances at indices 
 \begin_inset Formula $i$
 \end_inset
@@ -193,12 +214,11 @@ any
 \end_layout
 
 \begin_layout Standard
-Proof: An overlapping instance occurs iff an instance occurs at some index
- 
+Proof: Overlap of two instances occurs iff an instance occurs at index 
 \begin_inset Formula $i$
 \end_inset
 
- and another instance occurs at 
+ and another instance occurs at index 
 \begin_inset Formula $i+p$
 \end_inset
 
@@ -252,8 +272,7 @@ Proof: An overlapping instance occurs iff an instance occurs at some index
 \end_layout
 
 \begin_layout Standard
-Theorem 2: No string consists of repetitions (partial or not) of two distinct
- prefixes 
+Theorem 2: No string has two distinct periodic prefixes 
 \begin_inset Formula $P,Q$
 \end_inset
 
@@ -262,7 +281,37 @@ Theorem 2: No string consists of repetitions (partial or not) of two distinct
 \end_layout
 
 \begin_layout Standard
-Proof: TODO
+FIXME: Theorem 2 needs to be restricted to be true.
+ I have discovered that if a single complete period plus a partial period
+ is enough, then a string can indeed have several periods that are not multiples
+ of each other (e.g.
+ 
+\begin_inset Quotes eld
+\end_inset
+
+aabaaabaaa
+\begin_inset Quotes erd
+\end_inset
+
+ has both period 4 and period 9).
+\end_layout
+
+\begin_layout Standard
+TODO: Proof: (The (restricted) theorem is implied by the statement that
+ 
+\emph on
+no sequence
+\emph default
+ (finite or infinite, not even a constant one) has two periods where neither
+ is a multiple of the other (if we exclude 
+\begin_inset Quotes eld
+\end_inset
+
+periods
+\begin_inset Quotes erd
+\end_inset
+
+ that are greater than half the length of a finite sequence).)
 \end_layout
 
 \begin_layout Standard
@@ -270,15 +319,11 @@ Corollary 2.1: If a string
 \begin_inset Formula $S$
 \end_inset
 
- consists of repetitions of any prefix, then it has a unique 
-\emph on
-shortest repeating prefix
-\emph default
- 
+ is periodic, then it has a unique shortest periodic prefix 
 \begin_inset Formula $P$
 \end_inset
 
- such that all repeating prefixes of 
+ such that all periodic prefixes of 
 \begin_inset Formula $S$
 \end_inset
 
@@ -288,9 +333,9 @@ shortest repeating prefix
 
 .
  This is just Theorem 2 stated as a universal positive instead of an existential
- negative (plus the facts that no string has more than one prefix of the
- same length, that no shorter string is a (non-zero) multiple of a longer
- one and that 
+ negative (plus the facts that no string has more than one distinct prefix
+ of the same length, that no shorter string is a (non-zero) multiple of
+ a longer one and that 
 \begin_inset Quotes eld
 \end_inset
 
@@ -309,22 +354,25 @@ Note that together, Theorem 1 and Corollary 2.1 imply that there's no need
 \end_inset
 
 .
- When we are searching for an overlappable string (i.e.
- one that consists of a shortest repeating prefix 
+ If we are searching for a periodic 
+\begin_inset Formula $N$
+\end_inset
+
+ (and if we aren't, then there are no overlapping instances) with shortest
+ periodic prefix 
 \begin_inset Formula $P$
 \end_inset
 
-) and find an instance that doesn't overlap with any preceding instance
- (i.e.
- one that begins at a smaller index in the haystack), we know that we potentiall
-y have the beginning of an overlapping instance (i.e.
+ and find an instance that doesn't overlap with any preceding instance (i.e.
+ an instance that begins at a smaller index in the haystack), then we know
+ that we potentially have the beginning of an overlapping instance (i.e.
  the found instance minus the first repetition of 
 \begin_inset Formula $P$
 \end_inset
 
 ).
- We may continue to check this potential search hit against the suffix of
- 
+ We may continue to check this potential overlapping instance against the
+ suffix of 
 \begin_inset Formula $N$
 \end_inset
 
