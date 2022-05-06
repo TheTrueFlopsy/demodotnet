@@ -1,0 +1,52 @@
+
+aaa
+aaaaaaa
+aaa
+ aaa
+	aaa
+	 aaa
+		aaa
+
+ababa
+ababababababa
+ababa
+	ababa
+		ababa
+			ababa
+				ababa
+
+ababCabaD
+ababCabab
+
+abCabDabC
+abCabC
+
+
+aaabaaabcc
+
+aaaa
+aaabaaaba
+
+a
+aab
+aabaabc
+aabaabcaabaabcd
+aabaabcaabaabcdaabaabcaabaabcde
+aabaabcaabaabcdaabaabcaabaabcdeaabaabcaabaabcdaabaabcaabaabcdef
+
+a
+aab
+aabac
+aabacad
+aabacadae
+aabacadaeaf
+
+aabaaabaaa   (length 10)
+aaba,aaba,aa (period 4)
+aabaaabaa,a  (period 9) <- non-multiple of 4
+
+aaabaaaabaaaa   (length 13)
+aaaba,aaaba,aaa (period 5)
+aaabaaaabaaa,a  (period 12) <- non-multiple of 5
+aaabaaaabaa,aa  (period 11) <- non-multiple of 5
+aaabaaaaba,aaa  (period 10)
