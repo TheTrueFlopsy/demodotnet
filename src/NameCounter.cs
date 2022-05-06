@@ -5,6 +5,46 @@ using System.IO;
 using System.Text;
 
 namespace NameCounter {
+	// Sick and dirty improvised unit tester.
+	static class SadUnit {
+		public static int AssertTrue(bool b, string testName) {
+			if (b) {
+				Console.WriteLine($"{testName}: SUCCESS");
+				return 0;
+			}
+			else {
+				Console.WriteLine($"{testName}: FAILED");
+				return 1;
+			}
+		}
+		
+		public static int AssertEqual<T>(T o1, T o2, string testName) {
+			var comparer = EqualityComparer<T>.Default;
+			return AssertTrue(comparer.Equals(o1, o2), testName);
+		}
+		
+		// NOTE: To be honest, I find it deplorable that to this day there is
+		//       apparently no convenient, builtin way to compare the content
+		//       of two arrays in C# (e.g. "a1.Equals(a2)").
+		public static int AssertArrayEqual<T>(T[] a1, T[] a2, string testName) {
+			// NOTE: It is also my strong opinion that one shouldn't have to
+			//       resort to cruft like "EqualityComparer<T>.Default"
+			//       to check two objects of the same known type for value equality.
+			var comparer = EqualityComparer<T>.Default;
+			bool success = (a1.Length == a2.Length);
+			
+			for (int i = 0; success && i < a1.Length; i++)
+				success &= comparer.Equals(a1[i], a2[i]);
+			
+			return AssertTrue(success, testName);
+		}
+	}
+	
+	
+	// Implements an algorithm that counts instances of a given string
+	// in a text stream. Supports both non-overlapping (where "xyzababaqw"
+	// contains a single instance of "aba") and overlapping (where "xyzababaqw"
+	// contains two instances of "aba") search. This class is stateless.
 	static class StreamSearcher {
 		private struct PrefixData {
 			public int Index;
@@ -27,6 +67,8 @@ namespace NameCounter {
 					while (index + length < s.Length && s[index + length] == s[length])
 						length++;
 					
+					// IDEA: Prefixes that are contained in other prefixes will never be selected
+					//       by GetPrefixPos. Avoid generating those prefixes?
 					prefixes.Add(new PrefixData(index, length));
 				}
 			}
@@ -121,13 +163,112 @@ namespace NameCounter {
 			
 			return count;
 		}
+		
+		public static int Test_FindPrefixes() {
+			int res = 0;
+			string inputStr;
+			PrefixData[] expected, actual;
+			
+			inputStr = "";
+			expected = new PrefixData[] {};
+			actual = FindPrefixes(inputStr);
+			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
+			
+			inputStr = "abcd";
+			expected = new PrefixData[] {};
+			actual = FindPrefixes(inputStr);
+			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
+			
+			inputStr = "xxx";
+			expected = new PrefixData[] { new PrefixData(1, 2), new PrefixData(2, 1) };
+			actual = FindPrefixes(inputStr);
+			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
+			
+			inputStr = "aabaaabaaa";
+			expected = new PrefixData[] {
+				new PrefixData(1, 1), // "a"
+				new PrefixData(3, 2), // "aa"
+				new PrefixData(4, 6), // "aabaaa"
+				new PrefixData(5, 1), // "a"
+				new PrefixData(7, 2), // "aa"
+				new PrefixData(8, 2), // "aa"
+				new PrefixData(9, 1)  // "a"
+			};
+			actual = FindPrefixes(inputStr);
+			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
+			
+			return res;
+		}
+		
+		public static int Test_GetPrefixPos() {
+			int res = 0;
+			int actual;
+			PrefixData[] prefixes = new PrefixData[] {
+				new PrefixData(1, 1), // "a"
+				new PrefixData(3, 2), // "aa"
+				new PrefixData(4, 6), // "aabaaa"
+				new PrefixData(5, 1), // "a"
+				new PrefixData(7, 2), // "aa"
+				new PrefixData(8, 2), // "aa"
+				new PrefixData(9, 1)  // "a"
+			};
+			
+			actual = GetPrefixPos(prefixes, 2);
+			res += SadUnit.AssertEqual(1, actual, "GetPrefixPos(2)");
+			
+			actual = GetPrefixPos(prefixes, 3);
+			res += SadUnit.AssertEqual(0, actual, "GetPrefixPos(3)");
+			
+			actual = GetPrefixPos(prefixes, 4);
+			res += SadUnit.AssertEqual(1, actual, "GetPrefixPos(4)");
+			
+			actual = GetPrefixPos(prefixes, 7);
+			res += SadUnit.AssertEqual(3, actual, "GetPrefixPos(7)");
+			
+			actual = GetPrefixPos(prefixes, 9);
+			res += SadUnit.AssertEqual(5, actual, "GetPrefixPos(9)");
+			
+			return res;
+		}
+		
+		public static int Test_ReadChar() {
+			return 0;  // TODO: Implement this.
+		}
+		
+		public static int Test_CountString() {
+			return 0;  // TODO: Implement this.
+		}
+		
+		public static int DoUnitTests() {
+			int res = 0;
+			res += Test_FindPrefixes();
+			res += Test_GetPrefixPos();
+			res += Test_ReadChar();
+			res += Test_CountString();
+			return res;
+		}
 	}
 	
+	
+	// Implements the command-line user interface of the filename counter.
+	// Supports multiple input files and searching for an arbitrary string
+	// instead of the file name. Provides a self-test mode (note that this
+	// mode expects specific test input files to be present in the "./test"
+	// directory).
 	static class NameCounterMain {
 		private static bool printUsage = false;
 		private static bool overlapMode = false;
 		private static string queryString = null;
 		private static bool acceptMissing = false;
+		private static bool runTests = false;
+		
+		private static void ResetConfig() {
+			printUsage = false;
+			overlapMode = false;
+			queryString = null;
+			acceptMissing = false;
+			runTests = false;
+		}
 		
 		private static string GetOptionArgument(string[] args, ref int argIndex, ref int strIndex) {
 			// Use the rest of the current CLI argument as the option argument.
@@ -191,6 +332,9 @@ namespace NameCounter {
 				case 'z':
 					acceptMissing = true;
 					break;
+				case 'T':
+					runTests = true;
+					break;
 				default:
 					Console.WriteLine($"Unrecognized option {optionSymbol}.");
 					return -1;
@@ -200,7 +344,7 @@ namespace NameCounter {
 			return argIndex;
 		}
 		
-		private static void PrintUsage() {
+		private static void DoPrintUsage() {
 			Console.WriteLine(@"Usage: NameCounter [OPTION]... FILE...
 Count instances of a string in the specified text files. The default
 behavior is to search for the name of each input file (sans extension).
@@ -211,32 +355,58 @@ Options (may be combined in a single argument (e.g. '-ozq hello')):
   -o        Include overlapping instances (default: no).
   -q STR    Query string (default: input filename without extension).
   -z        Treat nonexistent input files as empty instead of having them
-            trigger an error (default: no).");
+            trigger an error (default: no).
+  -T        Run self tests and exit.");
 		}
 		
-		static void Main(string[] args) {
+		private static int Test_DoWork() {
+			return 0;  // TODO: Implement this.
+		}
+		
+		private static int DoRunTests() {
+			int res = 0;
+			
+			Console.WriteLine("Running self-test suite...");
+			
+			res += StreamSearcher.DoUnitTests();
+			
+			res += Test_DoWork();
+			
+			if (res == 0)
+				Console.WriteLine("ALL TESTS SUCCESSFUL");
+			else
+				Console.WriteLine($"FAILURE, {res:d} TESTS FAILED");
+			
+			return (res == 0) ? 0 : 1;
+		}
+		
+		private static int DoWork(string[] args) {
 			// Parse CLI arguments.
+			ResetConfig();
 			int inputArgIndex = ParseArgs(args);
 			
 			if (inputArgIndex < 0) {  // Argument parsing failed.
-				PrintUsage();
-				Environment.Exit(2);
+				DoPrintUsage();
+				return 2;
 			}
 			
 			if (printUsage) {
-				PrintUsage();
-				return;
+				DoPrintUsage();
+				return 0;
 			}
+			
+			if (runTests)
+				return DoRunTests();
 			
 			if (queryString != null && queryString.Length == 0) {
 				Console.WriteLine("Cannot search for the empty string.");
-				Environment.Exit(2);
+				return 2;
 			}
 			
 			if (inputArgIndex >= args.Length) {
 				Console.WriteLine("No input file specified.");
-				PrintUsage();
-				Environment.Exit(2);
+				DoPrintUsage();
+				return 2;
 			}
 			
 			int count = 0;
@@ -292,10 +462,10 @@ Options (may be combined in a single argument (e.g. '-ozq hello')):
 					inputCount = 0;
 				
 				if (inputCount < 0)  // Something went wrong.
-					Environment.Exit(1);
+					return 1;
 				else if (inputCount > int.MaxValue - count) {
 					Console.WriteLine("Maximum total count exceeded.");
-					Environment.Exit(1);
+					return 1;
 				}
 				else
 					count += inputCount;
@@ -305,6 +475,13 @@ Options (may be combined in a single argument (e.g. '-ozq hello')):
 			
 			// Print the count on standard output.
 			Console.WriteLine($"Found {count:d} instances of the query string.");
+			return 0;
+		}
+		
+		public static void Main(string[] args) {
+			int res = DoWork(args);
+			if (res != 0)  // Found error code.
+				Environment.Exit(res);  // Terminate with error.
 		}
 	}
 }

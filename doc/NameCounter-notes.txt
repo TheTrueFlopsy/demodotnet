@@ -4,10 +4,15 @@ x Finish an initial version of the code.
 
 o Convince myself that the algorithm is correct. Document my reasoning.
 
-* Document the code. Describe my assumptions about the task.
+o Create and run a test suite.
+	? Builtin C#/.NET unit testing?
+		! Nope, AFAICT. There are various 2nd/3rd-party tools, though.
+			! https://docs.microsoft.com/en-us/dotnet/core/testing/#testing-tools
 
-* Create and run a test suite.
-	? Builtin .NET unit testing?
+* Document the code. Describe my assumptions about the task.
+	! https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/documentation-comments
+	! Apparently the Mono way of code documentation is to NOT include full documentation in the code. Instead you're supposed to use a tool to generate stub documentation from compiled assemblies and then fill the stub files with content.
+		! 'man mdoc', 'man 5 mdoc'
 
 * Review the code. Consider improved error handling/reporting.
 
