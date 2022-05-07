@@ -1,58 +1,27 @@
 
+/**
+	File: NameCounter.cs
+	Contains the implementation of the NameCounter tool.
+*/
+
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace NameCounter {
-	// Sick and dirty improvised unit tester.
-	static class SadUnit {
-		public static int AssertTrue(bool b, string testName, string failCond="false") {
-			if (b) {
-				Console.WriteLine($"{testName}: SUCCESS");
-				return 0;
-			}
-			else {
-				Console.WriteLine($"{testName}: FAILED ({failCond})");
-				return 1;
-			}
-		}
-		
-		public static int AssertEqual<T>(T o1, T o2, string testName) {
-			var comparer = EqualityComparer<T>.Default;
-			return AssertTrue(comparer.Equals(o1, o2), testName, $"{o1} != {o2}");
-		}
-		
-		// NOTE: To be honest, I find it deplorable that to this day there is
-		//       apparently no convenient, builtin way to compare the content
-		//       of two arrays in C# (e.g. "a1.Equals(a2)").
-		public static int AssertArrayEqual<T>(T[] a1, T[] a2, string testName) {
-			// NOTE: It is also my strong opinion that one shouldn't have to
-			//       resort to cruft like "EqualityComparer<T>.Default"
-			//       to check two objects of the same known type for value equality.
-			var comparer = EqualityComparer<T>.Default;
-			string failCond = "false";
-			
-			bool success = (a1.Length == a2.Length);
-			if (!success)
-				failCond = $"a1.Length={a1.Length:d} != a2.Length={a2.Length:d}";
-			
-			for (int i = 0; success && i < a1.Length; i++) {
-				success &= comparer.Equals(a1[i], a2[i]);
-				if (!success)
-				failCond = $"a1[{i:d}]={a1[i]} != a2[{i:d}]={a2[i]}";
-			}
-			
-			return AssertTrue(success, testName, failCond);
-		}
-	}
-	
-	
-	// Implements an algorithm that counts instances of a given string
-	// in a text stream. Supports both non-overlapping (where "xyzababaqw"
-	// contains a single instance of "aba") and overlapping (where "xyzababaqw"
-	// contains two instances of "aba") search. This class is stateless.
-	static class StreamSearcher {
+	/**
+		Class: StreamSearcher
+		Implements an algorithm that counts instances of a given string
+		in a text stream. Supports both non-overlapping (where "ABBABBA"
+		contains a single instance of "ABBA") and overlapping (where "ABBABBA"
+		contains two instances of "ABBA") search. This class is stateless.
+	*/
+	static partial class StreamSearcher {
+		/**
+			Inner Class: PrefixData
+			Represents a substring as a start index and a length. Used to keep
+			track of repeated prefixes in query strings.
+		*/
 		private struct PrefixData {
 			public int Index;
 			
@@ -72,6 +41,20 @@ namespace NameCounter {
 			}
 		}
 		
+		/**
+			Method: FindPrefixes
+			Finds all the repeated prefixes in a given string that are not contained
+			in another repeated prefix. There is a repeated prefix of length *L* at
+			index *i* in *s* if and only if *i > 0* and *s[i+k] == s[k]* for all *k*
+			between zero (inclusive) and *L* (exclusive).
+			
+			Parameters:
+				s - The string to look for repeated prefixes in.
+			
+			Returns:
+				An array containing all repeated prefixes of *s* that are not contained in
+				another repeated prefix, in ascending start index order.
+		*/
 		private static PrefixData[] FindPrefixes(string s) {
 			var prefixes = new List<PrefixData>();
 			var prevPrefix = new PrefixData(0, 0);  // Dummy prefix.
@@ -83,8 +66,8 @@ namespace NameCounter {
 					while (index + length < s.Length && s[index + length] == s[length])
 						length++;
 					
-					// IDEA: Prefixes that are contained in other prefixes will never be selected
-					//       by GetPrefixPos. Avoid generating those prefixes?
+					// Prefixes that are contained in other prefixes will never be selected
+					// by GetPrefixPos. Avoid generating those prefixes.
 					var newPrefix = new PrefixData(index, length);
 					
 					if (newPrefix.EndIndex > prevPrefix.EndIndex) {
@@ -98,19 +81,35 @@ namespace NameCounter {
 			return prefixes.ToArray();
 		}
 		
+		/**
+			Method: GetPrefixPos
+			Takes a description of the repeated prefixes in a string and some
+			index in that string as arguments. Returns the difference between the
+			specified index and the start index of the first repeated prefix of the
+			string that starts before the specified index and ends after or at the
+			specified index, or zero, if no such prefix exists.
+			
+			Parameters:
+				prefixes - An array of <PrefixData> that describes the repeated prefixes
+				           in some string.
+				pos - An index in the string described by *prefixes*.
+			
+			Returns:
+				The length of the (truncated) repeated prefix of the described string
+				that ends at index *pos* in the string, or zero, if there is no such prefix.
+		*/
 		private static int GetPrefixPos(PrefixData[] prefixes, int pos) {
-			// If no matching prefix is found, abort the current matching attempt and
-			// look for the next partial match (starting with the current char).
+			// If no matching repeated prefix is found, return zero.
 			int prefixPos = 0;
 			
-			// Check each repeated prefix in the query string.
+			// Check each repeated prefix in the string.
 			foreach (var prefix in prefixes) {
-				// Break when the remaining prefixes start after the current partial match.
+				// Break when the remaining prefixes start after the specified position.
 				if (prefix.Index >= pos)
 					break;
 				else if (prefix.EndIndex >= pos) {  // Found matching prefix.
-					// Set query string position to continue the matching attempt from
-					// the position of the matching prefix.
+					// Return the length of the matching prefix, truncated to end at
+					// the specified position.
 					prefixPos = pos - prefix.Index;
 					break;
 				}
@@ -119,19 +118,45 @@ namespace NameCounter {
 			return prefixPos;
 		}
 		
-		private static char ReadChar(StreamReader f, out bool success) {
+		/**
+			Method: TryReadChar
+			Helper method that attempts to read a character from a *StreamReader* and
+			returns true if successful.
+			
+			Parameters:
+				f - The *StreamReader* to read from.
+				c - *[Out]* The character that was read, or a null character if reading
+				    failed.
+			
+			Returns:
+				True if and only if a character was successfully read.
+		*/
+		private static bool TryReadChar(StreamReader f, out char c) {
 			int ci = f.Read();  // Read the next character from the stream.
 			
 			if (ci < 0) {  // Failed to read from the stream.
-				success = false;
-				return '\0';
+				c = '\0';
+				return false;
 			}
 			else {
-				success = true;
-				return Convert.ToChar(ci);
+				c = Convert.ToChar(ci);
+				return true;
 			}
 		}
 		
+		/**
+			Method: CountString
+			Counts instances of a specified string in text read from a *StreamReader*.
+			
+			Parameters:
+				f - The *StreamReader* to read from.
+				s - The string to count instances of.
+				overlapMode - Flag indicating whether to count overlapping instances
+				              (e.g. the second "ABBA" in "ABBABBA").
+			
+			Returns:
+				The number of instances of the specified string that were found.
+		*/
 		public static int CountString(StreamReader f, string s, bool overlapMode) {
 			if (s.Length == 0) {
 				Console.WriteLine("Cannot search for the empty string.");
@@ -140,8 +165,8 @@ namespace NameCounter {
 			
 			PrefixData[] prefixes = FindPrefixes(s);
 			
-			bool hasChar;
-			char c = ReadChar(f, out hasChar);  // Read the first character from the stream.
+			char c;
+			bool hasChar = TryReadChar(f, out c);  // Read the first character from the stream.
 			int pos = 0, count = 0;
 			
 			while (hasChar) {
@@ -170,143 +195,62 @@ namespace NameCounter {
 				}
 				// else: No match in progress, keep looking for a match.
 				
-				c = ReadChar(f, out hasChar);  // Read the next character from the stream.
+				hasChar = TryReadChar(f, out c);  // Read the next character from the stream.
 			}
 			
 			return count;
 		}
 		
+		/**
+			Method: CountString
+			Counts instances of a specified string in text read from a *Stream*.
+			Internally wraps the *Stream* in a *StreamReader*.
+			
+			Parameters:
+				f - The *Stream* to read from.
+				s - The string to count instances of.
+				overlapMode - Flag indicating whether to count overlapping instances
+				              (e.g. the second "ABBA" in "ABBABBA").
+			
+			Returns:
+				The number of instances of the specified string that were found.
+		*/
 		public static int CountString(Stream f, string s, bool overlapMode) {
 			int count;
 			
+			// This contructor assumes UTF-8 encoding.
+			// ISSUE: Do we need to deal with other encodings? How?
+			//        There could be an option to explicitly specify
+			//        another encoding. Does the .NET platform provide
+			//        auto-detection of encodings?
 			using (StreamReader sr = new StreamReader(f)) {
 				count = CountString(sr, s, overlapMode);
 			}
 			
 			return count;
 		}
-		
-		public static int Test_FindPrefixes() {
-			int res = 0;
-			string inputStr;
-			PrefixData[] expected, actual;
-			
-			inputStr = "";
-			expected = new PrefixData[] {};
-			actual = FindPrefixes(inputStr);
-			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
-			
-			inputStr = "abcd";
-			expected = new PrefixData[] {};
-			actual = FindPrefixes(inputStr);
-			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
-			
-			inputStr = "xxx";
-			//expected = new PrefixData[] { new PrefixData(1, 2), new PrefixData(2, 1) };
-			expected = new PrefixData[] { new PrefixData(1, 2) };
-			actual = FindPrefixes(inputStr);
-			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
-			
-			inputStr = "aabaaabaaa";
-			expected = new PrefixData[] {
-				new PrefixData(1, 1), // "a"
-				new PrefixData(3, 2), // "aa"
-				new PrefixData(4, 6), // "aabaaa"
-				//new PrefixData(5, 1), // "a"  (contained)
-				//new PrefixData(7, 2), // "aa" (contained)
-				//new PrefixData(8, 2), // "aa" (contained)
-				//new PrefixData(9, 1)  // "a"  (contained)
-			};
-			actual = FindPrefixes(inputStr);
-			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
-			
-			return res;
-		}
-		
-		public static int Test_GetPrefixPos() {
-			int res = 0;
-			int actual;
-			PrefixData[] prefixes = new PrefixData[] {
-				new PrefixData(1, 1), // "a"
-				new PrefixData(3, 2), // "aa"
-				new PrefixData(4, 6), // "aabaaa"
-				new PrefixData(5, 1), // "a"
-				new PrefixData(7, 2), // "aa"
-				new PrefixData(8, 2), // "aa"
-				new PrefixData(9, 1)  // "a"
-			};
-			
-			actual = GetPrefixPos(prefixes, 2);
-			res += SadUnit.AssertEqual(1, actual, "GetPrefixPos(aabaaabaaa, 2)");
-			
-			actual = GetPrefixPos(prefixes, 3);
-			res += SadUnit.AssertEqual(0, actual, "GetPrefixPos(aabaaabaaa, 3)");
-			
-			actual = GetPrefixPos(prefixes, 4);
-			res += SadUnit.AssertEqual(1, actual, "GetPrefixPos(aabaaabaaa, 4)");
-			
-			actual = GetPrefixPos(prefixes, 7);
-			res += SadUnit.AssertEqual(3, actual, "GetPrefixPos(aabaaabaaa, 7)");
-			
-			actual = GetPrefixPos(prefixes, 9);
-			res += SadUnit.AssertEqual(5, actual, "GetPrefixPos(aabaaabaaa, 9)");
-			
-			return res;
-		}
-		
-		public static int Test_ReadChar() {
-			return 0;  // TODO: Implement this.
-		}
-		
-		public static int Test_CountString() {
-			int res = 0;
-			string inputPath;
-			int actual;
-			
-			inputPath = Path.Join("..", "test", "prefixes.txt");
-			using (FileStream f = File.Open(inputPath, FileMode.Open, FileAccess.Read)) {
-				actual = CountString(f, "period", false);
-			}
-			res += SadUnit.AssertEqual(6, actual, "CountString(prefixes.txt, period, false)");
-			
-			inputPath = Path.Join("..", "test", "prefixes.txt");
-			using (FileStream f = File.Open(inputPath, FileMode.Open, FileAccess.Read)) {
-				actual = CountString(f, "aa", false);
-			}
-			res += SadUnit.AssertEqual(81, actual, "CountString(prefixes.txt, aa, false)");
-			
-			inputPath = Path.Join("..", "test", "prefixes.txt");
-			using (FileStream f = File.Open(inputPath, FileMode.Open, FileAccess.Read)) {
-				actual = CountString(f, "aa", true);
-			}
-			res += SadUnit.AssertEqual(112, actual, "CountString(prefixes.txt, aa, true)");
-			
-			return res;
-		}
-		
-		public static int DoUnitTests() {
-			int res = 0;
-			res += Test_FindPrefixes();
-			res += Test_GetPrefixPos();
-			res += Test_ReadChar();
-			res += Test_CountString();
-			return res;
-		}
 	}
 	
 	
-	// Implements the command-line user interface of the filename counter.
-	// Supports multiple input files and searching for an arbitrary string
-	// instead of the file name. Provides a self-test mode (note that this
-	// mode expects specific test input files to be present in the "./test"
-	// directory).
-	static class NameCounterMain {
+	/**
+		Class: NameCounterMain
+		Implements the command-line user interface of the filename counter.
+		Supports multiple input files and searching for an arbitrary string
+		instead of the file name. Provides a self-test mode (note that this
+		mode expects specific test input files to be present in the "test"
+		subdirectory of the Git repository).
+	*/
+	static partial class NameCounterMain {
 		private static bool printUsage = false;
 		private static bool overlapMode = false;
 		private static string queryString = null;
 		private static bool acceptMissing = false;
 		private static bool runTests = false;
 		
+		/**
+			Method: ResetConfig
+			Resets all configuration variables to their default values.
+		*/
 		private static void ResetConfig() {
 			printUsage = false;
 			overlapMode = false;
@@ -315,6 +259,22 @@ namespace NameCounter {
 			runTests = false;
 		}
 		
+		/**
+			Method: GetOptionArgument
+			Attempts to get an option argument for a command-line option.
+			First looks for the option argument in the remaining characters of the current
+			CLI argument. If there are no remaining characters, then looks at the next CLI
+			argument. If that argument doesn't look like it contains more options, it is
+			assumed to be the sought option argument.
+			
+			Parameters:
+				args - A CLI argument sequence.
+				argIndex - *[Ref]* The index in *args* of the current CLI argument.
+				strIndex - *[Ref]* The current character index in *args[argIndex]*.
+			
+			Returns:
+				An option argument string, or *null* if no option argument was found.
+		*/
 		private static string GetOptionArgument(string[] args, ref int argIndex, ref int strIndex) {
 			// Use the rest of the current CLI argument as the option argument.
 			string arg = args[argIndex].Substring(strIndex);
@@ -338,6 +298,19 @@ namespace NameCounter {
 			return arg;
 		}
 		
+		/**
+			Method: ParseArgs
+			Parses and handles a CLI argument sequence.
+			
+			Parameters:
+				args - A CLI argument sequence.
+			
+			Returns:
+				The index of the first non-option argument in the sequence, unless there were
+				no non-option arguments or an error occurred. If there were no non-option
+				arguments, returns the length of the sequence. If an error occurred, returns
+				a negative value.
+		*/
 		private static int ParseArgs(string[] args) {
 			int argIndex = 0, strIndex = 1;
 			bool endOfOptions = false;
@@ -389,6 +362,10 @@ namespace NameCounter {
 			return argIndex;
 		}
 		
+		/**
+			Method: DoPrintUsage
+			Prints a brief help text for the *NameCounter* on standard output.
+		*/
 		private static void DoPrintUsage() {
 			Console.WriteLine(@"Usage: NameCounter [OPTION]... FILE...
 Count instances of a string in the specified text files. The default
@@ -404,57 +381,20 @@ Options (may be combined in a single argument (e.g. '-ozq hello')):
   -T        Run self tests and exit.");
 		}
 		
-		private static int Test_DoWork() {
-			int res = 0;
-			string inputPath, inputPath2;
-			string[] args;
-			int actual;
+		/**
+			Method: DoRunTests
+			Runs the *NameCounter* self-test suite.
 			
-			inputPath = "NameCounter.cs";
-			args = new string[] { inputPath };  // Search own source for own name.
-			actual = DoWork(args);
-			res += SadUnit.AssertEqual(0, actual, "DoWork(NameCounter.cs)");
-			
-			inputPath = Path.Join("..", "test", "prefixes.txt");
-			args = new string[] { "-q", "aba", inputPath };
-			actual = DoWork(args);
-			res += SadUnit.AssertEqual(0, actual, "DoWork(-q, aba, prefixes.txt)");
-			
-			inputPath = Path.Join("..", "test", "prefixes.txt");
-			args = new string[] { "-oq", "aba", inputPath };
-			actual = DoWork(args);
-			res += SadUnit.AssertEqual(0, actual, "DoWork(-oq, aba, prefixes.txt)");
-			
-			inputPath = Path.Join("..", "test", "prefixes.txt");
-			args = new string[] { "-#oq", "aba", inputPath };
-			actual = DoWork(args);
-			res += SadUnit.AssertEqual(2, actual, "DoWork(-#oq, aba, prefixes.txt)");
-			
-			inputPath = Path.Join("..", "test", "prefixes.txt");
-			inputPath2 = Path.Join("..", "test", "newton.txt");
-			args = new string[] { "-q", "aba", inputPath, inputPath2 };
-			actual = DoWork(args);
-			res += SadUnit.AssertEqual(0, actual, "DoWork(-q, aba, (prefixes.txt, newton.txt))");
-			
-			inputPath = Path.Join("..", "test", "not_there.txt");
-			args = new string[] { inputPath };
-			actual = DoWork(args);
-			res += SadUnit.AssertEqual(1, actual, "DoWork(not_there.txt)");
-			
-			inputPath = Path.Join("..", "test", "not_there.txt");
-			args = new string[] { "-z", inputPath };
-			actual = DoWork(args);
-			res += SadUnit.AssertEqual(0, actual, "DoWork(-z, not_there.txt)");
-			
-			return res;
-		}
-		
+			Returns:
+				A process exit status value that is zero if and only if all tests
+				were successful.
+		*/
 		private static int DoRunTests() {
 			int res = 0;
 			
 			Console.WriteLine("Running self-test suite...");
 			
-			res += StreamSearcher.DoUnitTests();
+			res += StreamSearcher.Test_AllTests();
 			
 			res += Test_DoWork();
 			
@@ -466,6 +406,17 @@ Options (may be combined in a single argument (e.g. '-ozq hello')):
 			return (res == 0) ? 0 : 1;
 		}
 		
+		/**
+			Method: DoWork
+			Runs the *NameCounter* as instructed by the specified CLI argument sequence.
+			
+			Parameters:
+				args - A CLI argument sequence.
+			
+			Returns:
+				A process exit status value that is zero if and only if execution finished
+				without errors.
+		*/
 		private static int DoWork(string[] args) {
 			// Parse CLI arguments.
 			ResetConfig();
@@ -564,10 +515,19 @@ Options (may be combined in a single argument (e.g. '-ozq hello')):
 			return 0;
 		}
 		
-		public static void Main(string[] args) {
-			int res = DoWork(args);
-			if (res != 0)  // Found error code.
-				Environment.Exit(res);  // Terminate with error.
+		/**
+			Method: Main
+			Entry point of the *NameCounter* application. Lets <DoWork> do the heavy lifting.
+			
+			Parameters:
+				args - A CLI argument sequence.
+			
+			Returns:
+				A process exit status value that is zero if and only if execution finished
+				without errors.
+		*/
+		public static int Main(string[] args) {
+			return DoWork(args);
 		}
 	}
 }

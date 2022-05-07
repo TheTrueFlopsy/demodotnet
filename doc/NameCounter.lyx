@@ -77,16 +77,20 @@
 
 \begin_body
 
+\begin_layout Subsection*
+About substring instances and periodic strings
+\end_layout
+
 \begin_layout Standard
 Definition 1: A string 
 \begin_inset Formula $N$
 \end_inset
 
-(the needle) 
+ (the needle) 
 \emph on
 has an instance
 \emph default
- at index 
+ as a substring at index 
 \begin_inset Formula $i$
 \end_inset
 
@@ -271,20 +275,202 @@ Proof: Overlap of two instances occurs iff an instance occurs at index
 , etc.).
 \end_layout
 
+\begin_layout Subsection*
+About algorithms that find substring instances
+\end_layout
+
 \begin_layout Standard
-Theorem 2: No string has two distinct periodic prefixes 
-\begin_inset Formula $P,Q$
+To find all instances of a string 
+\begin_inset Formula $N$
 \end_inset
 
- such that neither prefix is a multiple (i.e.
- consists of a number of complete repetitions) of the other.
+ in another string 
+\begin_inset Formula $H$
+\end_inset
+
+, it is by definition sufficient to test whether 
+\begin_inset Formula $\forall k\in[0,|N|),N[k]=H[i+k]$
+\end_inset
+
+ for all 
+\begin_inset Formula $i$
+\end_inset
+
+ that are valid indices of 
+\begin_inset Formula $H$
+\end_inset
+
+.
+ Every substring has to start somewhere, and that 
+\begin_inset Quotes eld
+\end_inset
+
+somewhere
+\begin_inset Quotes erd
+\end_inset
+
+ can only be a valid index of 
+\begin_inset Formula $H$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Assume that 
+\begin_inset Formula $H$
+\end_inset
+
+ is processed as a stream, one character at a time in ascending index order.
+ Further assume that we have found a complete or partial matching substring
+ at some index 
+\begin_inset Formula $i$
+\end_inset
+
+, i.e.
+ we have read and checked some number of characters 
+\begin_inset Formula $p\in[1,|N|]$
+\end_inset
+
+ and found that 
+\begin_inset Formula $\forall k\in[0,p),N[k]=H[i+k]$
+\end_inset
+
+.
+ We may now have to consider some of those characters again, since there
+ may also be instances that start somewhere in the interval 
+\begin_inset Formula $[i+1,i+p)$
+\end_inset
+
+.
+ A straightforward way to do this would be to maintain a look-behind buffer,
+ containing all characters in 
+\begin_inset Formula $H$
+\end_inset
+
+ that have been read from the input stream during the substring match attempt
+ but not yet tested as potential first characters of an instance of 
+\begin_inset Formula $N$
+\end_inset
+
+.
+ However, since a substring match attempt only continues while the checked
+ characters in 
+\begin_inset Formula $H$
+\end_inset
+
+ match the characters at the corresponding positions in 
+\begin_inset Formula $N$
+\end_inset
+
+, we know that such a buffer would always contain a prefix of the known
+ string 
+\begin_inset Formula $N$
+\end_inset
+
+.
+ This means that there can be an instance at any index 
+\begin_inset Formula $j=i+q$
+\end_inset
+
+ in 
+\begin_inset Formula $H$
+\end_inset
+
+, where 
+\begin_inset Formula $q\in[1,p)$
+\end_inset
+
+, only if the substring of 
+\begin_inset Formula $N$
+\end_inset
+
+ at indices 
+\begin_inset Formula $[q,p)$
+\end_inset
+
+ matches a prefix of 
+\begin_inset Formula $N$
+\end_inset
+
+ (i.e.
+ 
+\begin_inset Formula $\forall k\in[0,p-q),N[k]=N[q+k]$
+\end_inset
+
+).
+ In that case, we already have a new partial matching substring and may
+ continue matching that substring from index 
+\begin_inset Formula $i+p$
+\end_inset
+
+ in 
+\begin_inset Formula $H$
+\end_inset
+
+ and index 
+\begin_inset Formula $p-q$
+\end_inset
+
+ in 
+\begin_inset Formula $N$
+\end_inset
+
+.
+ If we know all the places (if any) where 
+\begin_inset Formula $N$
+\end_inset
+
+ partially repeats itself from the start, then we know all the places where
+ we may have to go back and look for another instance.
+\end_layout
+
+\begin_layout Standard
+TODO: Explain the method of the prefix list and why it is OK to omit contained
+ prefixes.
+\end_layout
+
+\begin_layout Standard
+TODO: Mention that to apply overlapping or non-overlapping search is simply
+ a matter of either consulting or not consulting the prefix list after a
+ complete instance has been found.
+\end_layout
+
+\begin_layout Subsection*
+More on periodic strings
+\end_layout
+
+\begin_layout Standard
+Theorem 2: No string has two distinct periods 
+\begin_inset Formula $p,q$
+\end_inset
+
+ that are not both multiples (i.e.
+ consists of a number of complete repetitions) of a single period (a common
+ factor of 
+\begin_inset Formula $p$
+\end_inset
+
+ and 
+\begin_inset Formula $q$
+\end_inset
+
+, possibly 
+\begin_inset Formula $p$
+\end_inset
+
+ or 
+\begin_inset Formula $q$
+\end_inset
+
+ itself).
 \end_layout
 
 \begin_layout Standard
 FIXME: Theorem 2 needs to be restricted to be true.
- I have discovered that if a single complete period plus a partial period
- is enough, then a string can indeed have several periods that are not multiples
- of each other (e.g.
+ I have discovered that if a single complete repetition plus a partial repetitio
+n is enough to identify a period, then a string can indeed have several
+ periods that are not multiples of any common factor period (e.g.
  
 \begin_inset Quotes eld
 \end_inset
@@ -293,7 +479,7 @@ aabaaabaaa
 \begin_inset Quotes erd
 \end_inset
 
- has both period 4 and period 9).
+ has both period 4 and period 9 (but not period 1)).
 \end_layout
 
 \begin_layout Standard
@@ -302,8 +488,9 @@ TODO: Proof: (The (restricted) theorem is implied by the statement that
 \emph on
 no sequence
 \emph default
- (finite or infinite, not even a constant one) has two periods where neither
- is a multiple of the other (if we exclude 
+ (finite or infinite, not even a constant one) has two periods that are
+ not both multiples of a fundamental (i.e.
+ shortest) period (if we exclude 
 \begin_inset Quotes eld
 \end_inset
 

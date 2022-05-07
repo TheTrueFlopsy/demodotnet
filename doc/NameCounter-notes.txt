@@ -4,19 +4,48 @@ x Finish an initial version of the code.
 
 o Convince myself that the algorithm is correct. Document my reasoning.
 
-o Create and run a test suite.
-	? Builtin C#/.NET unit testing?
+x Create and run a test suite.
+	x Use partial classes to put the test code in a separate file.
+	x Add test cases for a test file that contains some weird characters.
+	? Built-in C#/.NET unit testing?
 		! Nope, AFAICT. There are various 2nd/3rd-party tools, though.
 			! https://docs.microsoft.com/en-us/dotnet/core/testing/#testing-tools
 
-* Document the code. Describe my assumptions about the task.
+x Document the code.
 	! https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/documentation-comments
 	! Apparently the Mono way of code documentation is to NOT include full documentation in the code. Instead you're supposed to use a tool to generate stub documentation from compiled assemblies and then fill the stub files with content.
 		! 'man mdoc', 'man 5 mdoc'
 
-* Review the code. Consider improved error handling/reporting.
+* Write a summary of my solution and the thinking behind it. Describe my assumptions about the task.
+	! Write this in the README file.
+
+* Review the code. Consider beautifications and improved error handling/reporting.
 
 * Submit the code to Antura.
+
+
+---<<< Assumptions of My Solution >>>---
+* Counts instances of the query string, not lines containing that string.
+	! Fully character-oriented processing. Treats line endings in the input as any other characters.
+
+* Assumes ASCII/UTF-8 encoding and that operating on C# char:s (i.e. UTF-16 code units) is sufficient.
+	! No specific requirements of that sort were stated and I didn't feel like getting fancy with it.
+	! The widespread use of UTF-8 and high-low surrogate encoding of UTF-16 make it unlikely that this approach will result in unintended behavior.
+
+* Non-overlapping search is the default behavior.
+	! Overlapping search rarely makes a difference in natural text, can be non-intuitive and is often not intended.
+	! Overlapping search can be enabled if needed.
+
+* Self-contained, platform and toolchain agnostic solution.
+	! For ease of development and evaluation. This is not a program that will be used in production.
+	! Just two code files. Can be built with a simple compiler invocation.
+	! Only basic platform libraries used.
+	! Path format agnostic code. Lets the platform construct paths.
+	! Built-in test suite invoked with CLI option.
+	! Written for Mono on Debian.
+
+* Doc comments in NaturalDocs format.
+	! Because there doesn't appear to be any standard doc tool for .NET, and NaturalDocs is what I'm familiar with.
 
 
 ---<<< Notes on the Search Algorithm >>>---
