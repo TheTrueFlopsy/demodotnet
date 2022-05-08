@@ -112,7 +112,6 @@ namespace NameCounter {
 			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
 			
 			inputStr = "xxx";
-			//expected = new PrefixData[] { new PrefixData(1, 2), new PrefixData(2, 1) };
 			expected = new PrefixData[] { new PrefixData(1, 2) };
 			actual = FindPrefixes(inputStr);
 			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
@@ -121,11 +120,15 @@ namespace NameCounter {
 			expected = new PrefixData[] {
 				new PrefixData(1, 1), // "a"
 				new PrefixData(3, 2), // "aa"
-				new PrefixData(4, 6), // "aabaaa"
-				//new PrefixData(5, 1), // "a"  (contained)
-				//new PrefixData(7, 2), // "aa" (contained)
-				//new PrefixData(8, 2), // "aa" (contained)
-				//new PrefixData(9, 1)  // "a"  (contained)
+				new PrefixData(4, 6)  // "aabaaa"
+			};
+			actual = FindPrefixes(inputStr);
+			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
+			
+			inputStr = "abCabDabE";
+			expected = new PrefixData[] {
+				new PrefixData(3, 2), // "ab"
+				new PrefixData(6, 2)  // "ab"
 			};
 			actual = FindPrefixes(inputStr);
 			res += SadUnit.AssertArrayEqual(expected, actual, $"FindPrefixes({inputStr})");
@@ -191,17 +194,29 @@ namespace NameCounter {
 			}
 			res += SadUnit.AssertEqual(112, actual, "CountString(prefixes.txt, aa, true)");
 			
+			inputPath = Path.Join("..", "test", "prefixes.txt");
+			using (FileStream f = File.Open(inputPath, FileMode.Open, FileAccess.Read)) {
+				actual = CountString(f, "aabaaabaaa", false);
+			}
+			res += SadUnit.AssertEqual(1, actual, "CountString(prefixes.txt, aabaaabaaa, false)");
+			
+			inputPath = Path.Join("..", "test", "prefixes.txt");
+			using (FileStream f = File.Open(inputPath, FileMode.Open, FileAccess.Read)) {
+				actual = CountString(f, "abCabDabE", false);
+			}
+			res += SadUnit.AssertEqual(3, actual, "CountString(prefixes.txt, abCabDabE, false)");
+			
 			inputPath = Path.Join("..", "test", "unicode.txt");
 			using (FileStream f = File.Open(inputPath, FileMode.Open, FileAccess.Read)) {
 				actual = CountString(f, "ий", false);
 			}
-			res += SadUnit.AssertEqual(4, actual, "CountString(unicode.txt, ий, true)");
+			res += SadUnit.AssertEqual(4, actual, "CountString(unicode.txt, ий, false)");
 			
 			inputPath = Path.Join("..", "test", "unicode.txt");
 			using (FileStream f = File.Open(inputPath, FileMode.Open, FileAccess.Read)) {
 				actual = CountString(f, "😃", false);
 			}
-			res += SadUnit.AssertEqual(1, actual, "CountString(unicode.txt, 😃, true)");
+			res += SadUnit.AssertEqual(1, actual, "CountString(unicode.txt, 😃, false)");
 			
 			return res;
 		}

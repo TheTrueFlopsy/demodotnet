@@ -54,7 +54,7 @@ x Write a summary of my solution and the thinking behind it. Describe my assumpt
 	! Didn't see any compelling reason for OO design in a small program like this one.
 
 * Full disclosure:
-	! The array comparison in SadUnit is the only idea I got from a 3rd party (on StackExchange).
+	! The array comparison in SadUnit is the only idea I got from a 3rd party (on Stack Overflow).
 	! The argument parsing is adapted C++ code from another project of mine.
 	! The rest of the code is my own /ex nihilo/ creation, only guided by Microsoft's API docs.
 

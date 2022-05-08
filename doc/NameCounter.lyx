@@ -135,6 +135,30 @@ Definition 3: A string
 \begin_inset Formula $S$
 \end_inset
 
+ has a 
+\emph on
+repeated prefix
+\emph default
+ of length 
+\begin_inset Formula $L>0$
+\end_inset
+
+ at index 
+\begin_inset Formula $m>0$
+\end_inset
+
+, iff 
+\begin_inset Formula $(\forall k\in[0,L),S[k]=S[m+k])\wedge(m+L=|S|\vee S[L]\ne S[m+L])$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Definition 4: A string 
+\begin_inset Formula $S$
+\end_inset
+
  is 
 \emph on
 periodic
@@ -182,11 +206,7 @@ period
 \end_layout
 
 \begin_layout Standard
-Theorem 1: To have overlapping instances in 
-\emph on
-any
-\emph default
- string 
+Theorem 1: To have overlapping instances in any string 
 \begin_inset Formula $H$
 \end_inset
 
@@ -434,8 +454,8 @@ Assume that
 \begin_inset Formula $N$
 \end_inset
 
- partially repeats itself from the start, then we know all the places where
- we may have to go back and look for another instance.
+ has a repeated prefix, then we know all the places where we may have to
+ go back and look for another instance.
 \end_layout
 
 \begin_layout Standard

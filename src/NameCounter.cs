@@ -46,7 +46,8 @@ namespace NameCounter {
 			Finds all the repeated prefixes in a given string that are not contained
 			in another repeated prefix. There is a repeated prefix of length *L* at
 			index *i* in *s* if and only if *i > 0* and *s[i+k] == s[k]* for all *k*
-			between zero (inclusive) and *L* (exclusive).
+			between zero (inclusive) and *L* (exclusive), but either *s[i+L] != s[L]*
+			or *s* ends at index *i+L*.
 			
 			Parameters:
 				s - The string to look for repeated prefixes in.
@@ -163,6 +164,7 @@ namespace NameCounter {
 				return -1;
 			}
 			
+			// Identify and collect repeated prefixes in the query string.
 			PrefixData[] prefixes = FindPrefixes(s);
 			
 			char c;
@@ -236,9 +238,10 @@ namespace NameCounter {
 		Class: NameCounterMain
 		Implements the command-line user interface of the filename counter.
 		Supports multiple input files and searching for an arbitrary string
-		instead of the file name. Provides a self-test mode (note that this
-		mode expects specific test input files to be present in the "test"
-		subdirectory of the Git repository).
+		instead of the file name. Provides a self-test mode. Note that the
+		self-test mode expects to be run from the "src/" subdirectory of
+		the Git repository and also that specific test input files are
+		present in the "test/" subdirectory.
 	*/
 	static partial class NameCounterMain {
 		private static bool printUsage = false;

@@ -20,7 +20,11 @@ ababCabab
 
 abCabDabC
 abCabC
+abCabCabDabC
 
+abCabDabE
+abCabCabDabE
+abCabDabCabDabE
 
 aaabaaabcc
 
