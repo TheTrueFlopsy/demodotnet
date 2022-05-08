@@ -152,8 +152,7 @@ periodic prefix
 \end_inset
 
 .
- In that case, the number of periods (i.e.
- repetitions of 
+ In that case, the number of repetitions of 
 \begin_inset Formula $P$
 \end_inset
 
@@ -161,7 +160,7 @@ periodic prefix
 \begin_inset Formula $S$
 \end_inset
 
-, including any final partial one) is 
+, including any final partial one, is 
 \begin_inset Formula $\lceil|S|/|P|\rceil$
 \end_inset
 
@@ -202,7 +201,11 @@ any
 \end_inset
 
  (i.e.
- if there are overlapping instances at indices 
+ if 
+\begin_inset Formula $P$
+\end_inset
+
+ is a periodic prefix and there are overlapping instances at indices 
 \begin_inset Formula $i$
 \end_inset
 
@@ -218,7 +221,8 @@ any
 \end_layout
 
 \begin_layout Standard
-Proof: Overlap of two instances occurs iff an instance occurs at index 
+Proof: By Definition 2, overlap of two instances occurs iff an instance
+ occurs at index 
 \begin_inset Formula $i$
 \end_inset
 
@@ -322,8 +326,8 @@ Assume that
 \end_inset
 
  is processed as a stream, one character at a time in ascending index order.
- Further assume that we have found a complete or partial matching substring
- at some index 
+ Further assume that we have reached the end of a complete or partial matching
+ substring that starts at index 
 \begin_inset Formula $i$
 \end_inset
 
@@ -336,7 +340,16 @@ Assume that
 \begin_inset Formula $\forall k\in[0,p),N[k]=H[i+k]$
 \end_inset
 
-.
+ (but in the case of a partial match (i.e.
+ 
+\begin_inset Formula $p<|N|$
+\end_inset
+
+), 
+\begin_inset Formula $N[p]\neq H[i+p]$
+\end_inset
+
+).
  We may now have to consider some of those characters again, since there
  may also be instances that start somewhere in the interval 
 \begin_inset Formula $[i+1,i+p)$
@@ -370,7 +383,7 @@ Assume that
 
 .
  This means that there can be an instance at any index 
-\begin_inset Formula $j=i+q$
+\begin_inset Formula $i+m$
 \end_inset
 
  in 
@@ -378,15 +391,15 @@ Assume that
 \end_inset
 
 , where 
-\begin_inset Formula $q\in[1,p)$
+\begin_inset Formula $m\in[1,p)$
 \end_inset
 
 , only if the substring of 
 \begin_inset Formula $N$
 \end_inset
 
- at indices 
-\begin_inset Formula $[q,p)$
+ that consists of the characters at indices 
+\begin_inset Formula $[m,p)$
 \end_inset
 
  matches a prefix of 
@@ -395,7 +408,7 @@ Assume that
 
  (i.e.
  
-\begin_inset Formula $\forall k\in[0,p-q),N[k]=N[q+k]$
+\begin_inset Formula $\forall k\in[0,p-m),N[k]=N[m+k]$
 \end_inset
 
 ).
@@ -409,7 +422,7 @@ Assume that
 \end_inset
 
  and index 
-\begin_inset Formula $p-q$
+\begin_inset Formula $p-m$
 \end_inset
 
  in 
@@ -426,14 +439,98 @@ Assume that
 \end_layout
 
 \begin_layout Standard
-TODO: Explain the method of the prefix list and why it is OK to omit contained
- prefixes.
+One approach to handling the need to re-check characters that have already
+ been checked and read is to first generate a list where the start index
+ 
+\begin_inset Formula $m$
+\end_inset
+
+ and length 
+\begin_inset Formula $L$
+\end_inset
+
+ of every repeated prefix in 
+\begin_inset Formula $N$
+\end_inset
+
+ are recorded and then, whenever the end of a matching substring of length
+ 
+\begin_inset Formula $p$
+\end_inset
+
+ has been reached, check whether any prefixes on the list satisfy the condition
+ 
+\begin_inset Formula $m<p\wedge L\ge p-m$
+\end_inset
+
+.
+ If the prefix with the lowest start index among these prefixes is selected
+ (this can easily be accomplished by using a prefix list that is sorted
+ in ascending start index order) and the search then continues with a new
+ matching substring of length 
+\begin_inset Formula $p-m$
+\end_inset
+
+, then every instance of 
+\begin_inset Formula $N$
+\end_inset
+
+ in 
+\begin_inset Formula $H$
+\end_inset
+
+ will be found.
+ This is because each instance that overlaps with a matching substring must
+ start at a repeated prefix, and if we always continue the search at the
+ first repeated prefix that could be the start of an instance, then we'll
+ never miss any instance.
 \end_layout
 
 \begin_layout Standard
-TODO: Mention that to apply overlapping or non-overlapping search is simply
- a matter of either consulting or not consulting the prefix list after a
- complete instance has been found.
+Repeated prefixes that are contained in another repeated prefix (e.g.
+ like 
+\begin_inset Quotes eld
+\end_inset
+
+AA
+\begin_inset Quotes erd
+\end_inset
+
+ at index 8 in 
+\begin_inset Quotes eld
+\end_inset
+
+AABAAAABAACC
+\begin_inset Quotes erd
+\end_inset
+
+ is contained in 
+\begin_inset Quotes eld
+\end_inset
+
+AABAA
+\begin_inset Quotes erd
+\end_inset
+
+ at index 5) may be omitted from the list of prefixes without breaking the
+ algorithm.
+ Contained prefixes will never be selected as continuation points by the
+ algorithm, because the containing prefix always starts before the contained
+ one and ends at or after it.
+ This means that by the time 
+\begin_inset Formula $L<p-m$
+\end_inset
+
+ for the containing prefix (making it disproven as a potential instance
+ by subsequent non-matching characters and therefore no longer selectable),
+ the same will be the case for the contained prefix.
+\end_layout
+
+\begin_layout Standard
+Given the algorithm described above, applying overlapping or non-overlapping
+ substring search is simply a matter of either consulting or not consulting
+ the prefix list after a complete instance of the sought string has been
+ found.
 \end_layout
 
 \begin_layout Subsection*
@@ -445,9 +542,7 @@ Theorem 2: No string has two distinct periods
 \begin_inset Formula $p,q$
 \end_inset
 
- that are not both multiples (i.e.
- consists of a number of complete repetitions) of a single period (a common
- factor of 
+ that are not both multiples of a single period (a common factor of 
 \begin_inset Formula $p$
 \end_inset
 
@@ -463,7 +558,8 @@ Theorem 2: No string has two distinct periods
 \begin_inset Formula $q$
 \end_inset
 
- itself).
+ itself, or 1 (if the string is constant, i.e.
+ just a repetition of a single character)).
 \end_layout
 
 \begin_layout Standard
@@ -475,16 +571,17 @@ n is enough to identify a period, then a string can indeed have several
 \begin_inset Quotes eld
 \end_inset
 
-aabaaabaaa
+AABAAABAAA
 \begin_inset Quotes erd
 \end_inset
 
- has both period 4 and period 9 (but not period 1)).
+ has both period 4 and period 9 (but not period 1, which is the only common
+ factor)).
 \end_layout
 
 \begin_layout Standard
-TODO: Proof: (The (restricted) theorem is implied by the statement that
- 
+TODO: Prove Theorem 2.
+ The (restricted) theorem is implied by the statement that 
 \emph on
 no sequence
 \emph default
@@ -498,7 +595,8 @@ periods
 \begin_inset Quotes erd
 \end_inset
 
- that are greater than half the length of a finite sequence).)
+ that are greater than half the length of a finite sequence).
+ I believe this is true.
 \end_layout
 
 \begin_layout Standard
@@ -545,13 +643,13 @@ Note that together, Theorem 1 and Corollary 2.1 imply that there's no need
 \begin_inset Formula $N$
 \end_inset
 
- (and if we aren't, then there are no overlapping instances) with shortest
- periodic prefix 
+ (and if we aren't, then by Theorem 1 there are no overlapping instances)
+ with shortest periodic prefix 
 \begin_inset Formula $P$
 \end_inset
 
  and find an instance that doesn't overlap with any preceding instance (i.e.
- an instance that begins at a smaller index in the haystack), then we know
+ an instance that begins at a lower index in the haystack), then we know
  that we potentially have the beginning of an overlapping instance (i.e.
  the found instance minus the first repetition of 
 \begin_inset Formula $P$

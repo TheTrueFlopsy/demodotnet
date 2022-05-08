@@ -367,15 +367,16 @@ namespace NameCounter {
 			Prints a brief help text for the *NameCounter* on standard output.
 		*/
 		private static void DoPrintUsage() {
-			Console.WriteLine(@"Usage: NameCounter [OPTION]... FILE...
+			Console.WriteLine(@"Usage: NameCounter.exe [OPTION]... FILE...
 Count instances of a string in the specified text files. The default
 behavior is to search for the name of each input file (sans extension).
 
 Options (may be combined in a single argument (e.g. '-ozq hello')):
   --        End option parsing, treat remaining arguments as input files.
   -h        Print this message and exit.
-  -o        Include overlapping instances (default: no).
-  -q STR    Query string (default: input filename without extension).
+  -o        Include overlapping instances of the query string (default: no).
+  -q STR    Use the specified query string (default: input filename without
+            extension).
   -z        Treat nonexistent input files as empty instead of having them
             trigger an error (default: no).
   -T        Run self tests and exit.");

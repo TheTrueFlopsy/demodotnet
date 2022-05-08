@@ -2,7 +2,7 @@
 ---<<< To-Do List >>>---
 x Finish an initial version of the code.
 
-o Convince myself that the algorithm is correct. Document my reasoning.
+x Convince myself that the algorithm is correct. Document my reasoning.
 
 x Create and run a test suite.
 	x Use partial classes to put the test code in a separate file.
@@ -16,7 +16,7 @@ x Document the code.
 	! Apparently the Mono way of code documentation is to NOT include full documentation in the code. Instead you're supposed to use a tool to generate stub documentation from compiled assemblies and then fill the stub files with content.
 		! 'man mdoc', 'man 5 mdoc'
 
-* Write a summary of my solution and the thinking behind it. Describe my assumptions about the task.
+x Write a summary of my solution and the thinking behind it. Describe my assumptions about the task.
 	! Write this in the README file.
 
 * Review the code. Consider beautifications and improved error handling/reporting.
@@ -27,6 +27,12 @@ x Document the code.
 ---<<< Assumptions of My Solution >>>---
 * Counts instances of the query string, not lines containing that string.
 	! Fully character-oriented processing. Treats line endings in the input as any other characters.
+
+* Strictly sequential stream processing. Reads one character at a time from the input and doesn't do any seeking, pushback, buffering or indexing.
+	! Simple, space-efficient and effective solution.
+
+* By default counts instances of the plain filename, excluding any extension and directory names that were in the given input paths.
+	! Only the last extension is removed from filenames with multiple extensions.
 
 * Assumes ASCII/UTF-8 encoding and that operating on C# char:s (i.e. UTF-16 code units) is sufficient.
 	! No specific requirements of that sort were stated and I didn't feel like getting fancy with it.
@@ -43,6 +49,14 @@ x Document the code.
 	! Path format agnostic code. Lets the platform construct paths.
 	! Built-in test suite invoked with CLI option.
 	! Written for Mono on Debian.
+
+* The implementation is mostly procedural.
+	! Didn't see any compelling reason for OO design in a small program like this one.
+
+* Full disclosure:
+	! The array comparison in SadUnit is the only idea I got from a 3rd party (on StackExchange).
+	! The argument parsing is adapted C++ code from another project of mine.
+	! The rest of the code is my own /ex nihilo/ creation, only guided by Microsoft's API docs.
 
 * Doc comments in NaturalDocs format.
 	! Because there doesn't appear to be any standard doc tool for .NET, and NaturalDocs is what I'm familiar with.
