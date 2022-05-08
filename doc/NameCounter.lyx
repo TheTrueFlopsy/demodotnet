@@ -172,7 +172,7 @@ periodic prefix
 \end_inset
 
 , iff 
-\begin_inset Formula $\forall k\in[0,|S|),S[k]=P[k\mod|P|]$
+\begin_inset Formula $|S|>|P|\wedge\forall k\in[0,|S|),S[k]=P[k\mod|P|]$
 \end_inset
 
 .
